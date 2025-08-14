@@ -66,10 +66,10 @@ Fitting IC emission from an electron distribution
 
 .. code-block:: yaml
 
-    output_path:
+    output_path: /where/you/want/to/save/your/data
 
     data:
-      hess: RXJ1713_HESS_2007.dat
+      hess: /path/to/RXJ1713_HESS_2007.dat
 
     models:
     - name: inverse_compton

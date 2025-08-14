@@ -111,13 +111,11 @@ mcmc:
 
 ### Fitting IC emission from an electron distribution
 
-# See https://naima.readthedocs.io/en/latest/api-models.html for details
-
 ```yaml
-output_path:
+output_path: /where/you/want/to/save/your/data
 
 data:
-  hess: /Users/michele/Software/tests/naima/naimatic/examples/RXJ1713_HESS_2007.dat
+  hess: /path/to/RXJ1713_HESS_2007.dat
 
 models:
   - name: inverse_compton
@@ -170,6 +168,14 @@ mcmc:
 ```
 
 ### Fitting Synchrotron and IC emission from an electron distribution
+
+TODO
+
+### Hadronic model with pion decay
+
+TODO
+
+### Multiple radiative processes with same particle distributions
 
 TODO
 
