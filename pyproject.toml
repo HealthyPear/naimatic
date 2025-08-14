@@ -43,6 +43,7 @@ docs = [
     "sphinx-autoapi",
     "sphinx-changelog",
     "autodoc_pydantic",
+    "sphinx_copybutton"
 ]
 test = ["pytest"]
 
