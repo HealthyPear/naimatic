@@ -11,6 +11,23 @@ The implementation is that of a wrapper around `naima` which defines a configura
 validated by `pydantic` and produces the necessary objects by means of
 factory functions.
 
+If you find ``naima`` useful in your research, please cite [Zabalza (2015)](http://arxiv.org/abs/1509.03319)
+ to acknowledge its use. The BibTeX entry for the paper is:
+
+```bibtex
+
+    @ARTICLE{naima,
+       author = {{Zabalza}, V.},
+        title = {naima: a Python package for inference of relativistic particle
+                 energy distributions from observed nonthermal spectra},
+         year = 2015,
+      journal = {Proc.~of International Cosmic Ray Conference 2015},
+        pages = "922",
+       eprint = {1509.03319},
+       adsurl = {http://adsabs.harvard.edu/abs/2015arXiv150903319Z},
+    }
+```
+
 ## Requirements
 
 Any Python>=3.9 virtual environment with `pip` installed.
