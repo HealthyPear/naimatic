@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm[toml]"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "naimatic"
+authors = [{ name = "Michele Peresano", email = "peresano.michele@gmail.com" }]
+maintainers = [
+    { name = "Michele Peresano", email = "peresano.michele@gmail.com" },
+]
+description = "A wrapper around naima for easy building and fitting of multiple models."
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["naima", "mcmc", "pipeline", "astro"]
+license = "BSD-3-Clause"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = ["naima", "pydantic"]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "pre-commit",
+    "mypy",
+    "types-PyYAML",
+    "naimatic[test]",
+    "naimatic[docs]",
+]
+docs = [
+    "sphinx",
+    "furo",
+    "sphinx-autoapi",
+    "sphinx-changelog",
+    "autodoc_pydantic",
+]
+test = ["pytest"]
+
+[project.scripts]
+naimatic = "naimatic.main:main"
+
+# ... other project metadata fields as listed in:
+#     https://packaging.python.org/en/latest/guides/writing-pyproject-toml/
+
+# [tool.mypy]
+
+[tool.setuptools_scm]
+write_to = "src/naimatic/_version.py"
