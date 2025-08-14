@@ -9,6 +9,6 @@ You can see changes between published releases as well changes merged into the m
 of the development version.
 
 .. changelog::
-   :towncrier: ../
+   :towncrier: ../../
    :towncrier-skip-if-empty:
-   :changelog_file: ../CHANGES.rst
+   :changelog_file: ../../CHANGES.rst
