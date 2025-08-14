@@ -1,5 +1,6 @@
 """Library of factory functions."""
 
+import astropy.units as u
 import naima
 import naima.models as nm
 import numpy as np
@@ -19,6 +20,7 @@ __all__ = [
     "build_radiative_process",
     "build_model",
     "extract_p0_labels",
+    "compute_metadata_blobs",
 ]
 
 
@@ -123,3 +125,20 @@ def extract_p0_labels(model_cfg):
                 p0.append(param_cfg.init_value.value)
                 labels.append(param_name)
     return np.array(p0), labels
+
+def compute_metadata_blobs(metadata_cfg, pdist, rmodels):
+    blobs = []
+    for key, cfg_entry in metadata_cfg.model_dump().items():
+        if not cfg_entry.get("save", False):
+            continue
+
+        if key == "particle_distribution":
+            energy_range = cfg_entry.get("energy_range")
+            blobs.append((energy_range, pdist(energy_range)))  # tuple, not list
+
+        elif key == "total_particle_energy":
+            e_min = cfg_entry.get("e_min", 1 * u.TeV)
+            total_energy = sum(r.compute_We(Eemin=e_min) for r in rmodels)
+            blobs.append(total_energy)  # scalar Quantity
+
+    return blobs
