@@ -17,6 +17,7 @@ from .factory import (
     build_model,
     build_priors,
     extract_p0_labels,
+    compute_metadata_blobs
 )
 
 logging.basicConfig(
@@ -93,7 +94,16 @@ def wrapped_model_func(pars, data, model_cfg, pdist, rmodels):
             val = val * unit  # convert float to Quantity
         setattr(pdist, pname, val)
 
-    return model_func(None, data, model_cfg, pdist, rmodels)
+    # return model_func(None, data, model_cfg, pdist, rmodels)
+    total_flux =  model_func(data, model_cfg, rmodels)
+
+    blobs = ()
+    # compute metadata blobs if requested
+    if model_cfg.metadata:
+        blobs = compute_metadata_blobs(model_cfg.metadata, pdist, rmodels)
+
+    # return flux + all requested blobs
+    return total_flux, *blobs
 
 
 def wrapped_lnprior_func(pars, labels, priors):
@@ -149,13 +159,33 @@ def main():
             naima.save_run(results_file, sampler, clobber=overwrite_flag)
             logger.info(f"Results saved to: {results_file}")
 
+            # Build blob labels dynamically from the metadata config
+            metadata_cfg = model_cfg.metadata
+            blob_labels = ["Spectrum"]  # the first return value is always the flux
+            if hasattr(model_cfg, "metadata") and model_cfg.metadata:
+                for key, cfg_entry in metadata_cfg.model_dump().items():
+                    if cfg_entry.get("save", False):
+                        if key == "particle_distribution":
+                            blob_labels.append("Electron energy distribution")
+                        elif key == "total_particle_energy":
+                            e_min = cfg_entry.get("e_min")
+                            # format nicely if Quantity
+                            if hasattr(e_min, "value") and hasattr(e_min, "unit"):
+                                e_min_str = f"{e_min.value:g} {e_min.unit}"
+                            else:
+                                e_min_str = str(e_min)
+                            blob_labels.append(f"$W_e (E_e>{e_min_str})$")
+                        else:
+                            # fallback label
+                            blob_labels.append(key)
+
             try:
                 plot_prefix = model_cfg.name
                 naima.save_diagnostic_plots(
                     outdir / plot_prefix,
                     sampler,
-                    sed=False,
-                    blob_labels=["Spectrum", "$W_e$(E_e>1 TeV)"],
+                    sed=model_cfg.sed,
+                    blob_labels=blob_labels,
                 )
                 logger.info("Diagnostic plots saved.")
 
