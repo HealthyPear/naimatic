@@ -26,4 +26,4 @@ jobs:
         run: pip install -e .[docs]
 
       - name: Build docs
-        run: make doc
+        run: make -C docs html
