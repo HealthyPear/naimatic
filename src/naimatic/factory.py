@@ -165,7 +165,15 @@ def compute_metadata_blobs(metadata_cfg, pdist, rmodels):
 
         elif key == "total_particle_energy":
             e_min = cfg_entry.get("e_min", 1 * u.TeV)
-            total_energy = sum(r.compute_We(Eemin=e_min) for r in rmodels)
+            # Check if all rmodels share the same particle distribution instance/parameters
+            pdists = [getattr(r, "particle_distribution", None) for r in rmodels]
+            # Compare by id (same object) or by parameters
+            all_same = all(p is not None and p is pdists[0] for p in pdists)
+            if all_same:
+                # Only sum once
+                total_energy = rmodels[0].compute_We(Eemin=e_min)
+            else:
+                total_energy = sum(r.compute_We(Eemin=e_min) for r in rmodels)
             blobs.append(total_energy)
 
     return blobs
