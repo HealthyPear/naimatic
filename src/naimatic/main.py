@@ -10,9 +10,9 @@ import naima
 from pathlib import Path
 from functools import partial
 
-from astropy.io import ascii
+from astropy.io import ascii  # type: ignore
 
-from .config import Config, Param
+from .config import Config, Param, MagneticField
 from .factory import (
     build_model,
     build_priors,
@@ -44,13 +44,13 @@ args = parser.parse_args()
 
 def load_data(data_dict):
     """Load data from the provided dictionary of file paths."""
-    datasets = []
+    datasets = {}
     for key, value in data_dict.items():
         data_path = Path(value).resolve()
         if not data_path.exists():
             raise FileNotFoundError(f"Data file {value} does not exist.")
         dataset = ascii.read(data_path)
-        datasets.append(dataset)
+        datasets[key] = dataset
     return datasets
 
 
@@ -87,22 +87,28 @@ def wrapped_model_func(pars, data, model_cfg, pdist, rmodels):
             if getattr(param_cfg, "log10", False):
                 val = 10**val
             i += 1
-
-        # attach units if specified in Param
         unit = getattr(param_cfg.init_value, "unit", None)
         if unit is not None:
-            val = val * unit  # convert float to Quantity
+            val = val * unit
         setattr(pdist, pname, val)
 
-    # return model_func(None, data, model_cfg, pdist, rmodels)
+    for proc_cfg, rmodel in zip(model_cfg.radiative_processes, rmodels):
+        for pname, param_cfg in proc_cfg.__dict__.items():
+            if isinstance(param_cfg, Param) and not param_cfg.freeze:
+                val = pars[i]
+                i += 1
+                if getattr(param_cfg, "log10", False):
+                    val = 10**val
+                unit = getattr(param_cfg.init_value, "unit", None)
+                if unit is not None:
+                    val = val * unit
+                setattr(rmodel, pname, val)
+
     total_flux =  model_func(data, model_cfg, rmodels)
 
     blobs = ()
-    # compute metadata blobs if requested
     if model_cfg.metadata:
         blobs = compute_metadata_blobs(model_cfg.metadata, pdist, rmodels)
-
-    # return flux + all requested blobs
     return total_flux, *blobs
 
 
@@ -120,10 +126,18 @@ def main():
 
     output_path = cfg.output_path if cfg.output_path else Path(args.output_path)
 
-    data_tables = load_data(cfg.data)
+    data_tables_dict = load_data(cfg.data)
 
     for model_cfg in cfg.models:
         try:
+            # Initialize magnetic field value if present
+            for proc_cfg in model_cfg.radiative_processes:
+                if proc_cfg.name == "Synchrotron" and isinstance(
+                    proc_cfg.B, MagneticField
+                ):
+                    if proc_cfg.B.estimate_from:
+                        proc_cfg.B = proc_cfg.B.resolve(data_tables_dict)
+
             overwrite_flag = model_cfg.overwrite
 
             logger.info(f"Running model: {model_cfg.name}")
@@ -144,7 +158,7 @@ def main():
             prior_callable = partial(wrapped_lnprior_func, labels=labels, priors=priors)
 
             sampler, _ = naima.run_sampler(
-                data_table=data_tables,
+                data_table=list(data_tables_dict.values()),
                 p0=p0,
                 labels=labels,
                 model=model_callable,
@@ -164,7 +178,8 @@ def main():
             blob_labels = ["Spectrum"]  # the first return value is always the flux
             if hasattr(model_cfg, "metadata") and model_cfg.metadata:
                 for key, cfg_entry in metadata_cfg.model_dump().items():
-                    if cfg_entry.get("save", False):
+                    if cfg_entry and (cfg_entry.get("save", False)):
+                        logger.debug("Processing metadata key: %s", key)
                         if key == "particle_distribution":
                             blob_labels.append("Electron energy distribution")
                         elif key == "total_particle_energy":
