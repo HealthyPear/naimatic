@@ -1,6 +1,8 @@
 """Library of factory functions."""
 
-import astropy.units as u
+import logging
+
+import astropy.units as u  # type: ignore
 import naima
 import naima.models as nm
 import numpy as np
@@ -22,6 +24,8 @@ __all__ = [
     "extract_p0_labels",
     "compute_metadata_blobs",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 def _prior2_caller(x, fn, a, b):
@@ -116,29 +120,52 @@ def extract_p0_labels(model_cfg):
     """Ëxtract initial parameter values and their labels from the model configuration."""
     p0 = []
     labels = []
+
     for param_name, param_cfg in model_cfg.particle_distribution.__dict__.items():
         if isinstance(param_cfg, Param) and not param_cfg.freeze:
+            # Extract raw float value from Quantity or use as-is
+            raw_value = getattr(param_cfg.init_value, "value", param_cfg.init_value)
+
             if getattr(param_cfg, "log10", True):
-                p0.append(np.log10(param_cfg.init_value.value))
+                try:
+                    if raw_value is None or raw_value <= 0:
+                        logger.exception(
+                            "Cannot take log10 of non-positive value: %s", raw_value
+                        )
+                        raise
+                    logval = np.log10(raw_value)
+                except Exception:
+                    logger.exception(
+                        "np.log10 failed for %s with value %s", param_name, raw_value
+                    )
+                    logval = np.nan
+                p0.append(logval)
                 labels.append(f"log10({param_name})")
             else:
-                p0.append(param_cfg.init_value.value)
+                p0.append(raw_value)
                 labels.append(param_name)
+
+    for proc_cfg in model_cfg.radiative_processes:
+        for param_name, param_cfg in proc_cfg.__dict__.items():
+            if isinstance(param_cfg, Param) and not param_cfg.freeze:
+                p0.append(param_cfg.init_value.value)
+                labels.append(f"{proc_cfg.name}.{param_name}")
     return np.array(p0), labels
+
 
 def compute_metadata_blobs(metadata_cfg, pdist, rmodels):
     blobs = []
     for key, cfg_entry in metadata_cfg.model_dump().items():
-        if not cfg_entry.get("save", False):
+        if (cfg_entry is None) or (not cfg_entry.get("save", False)):
             continue
 
         if key == "particle_distribution":
             energy_range = cfg_entry.get("energy_range")
-            blobs.append((energy_range, pdist(energy_range)))  # tuple, not list
+            blobs.append((energy_range, pdist(energy_range)))
 
         elif key == "total_particle_energy":
             e_min = cfg_entry.get("e_min", 1 * u.TeV)
             total_energy = sum(r.compute_We(Eemin=e_min) for r in rmodels)
-            blobs.append(total_energy)  # scalar Quantity
+            blobs.append(total_energy)
 
     return blobs
