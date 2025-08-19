@@ -5,14 +5,14 @@ It includes definitions for particle distributions, radiative processes, and mod
 import warnings
 
 import astropy.units as u  # type: ignore
+import naima
 import numpy as np
 
 from pathlib import Path
 from typing import Annotated, Literal, Optional, Union, List
 
-from astropy.units import Quantity, Unit
+from astropy.units import Quantity
 from pydantic import BaseModel, Field, model_validator, field_validator
-from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
 
 __all__ = [
@@ -63,7 +63,6 @@ class QuantityType:
                 return Quantity(value, u.dimensionless_unscaled)
             raise TypeError(f"Cannot convert {value!r} to QuantityType")
 
-        from pydantic_core import core_schema
         return core_schema.no_info_plain_validator_function(validate_QuantityType)
 
 class UniformPrior(BaseModel):
@@ -124,12 +123,37 @@ class RadiativeProcessConfig(BaseModel):
     particle_distribution: ParticleDistributionConfig | None = None
 
 
+class MagneticField(BaseModel):
+    freeze: bool = False
+    init_value: Optional[QuantityType] = None
+    estimate_from: Optional[list[str]] = None
+    photon_energy_density: Optional[QuantityType] = None
+    prior: Optional[Prior] = None
+
+    def resolve(self, data_dict: dict) -> Param:
+        if self.init_value is not None:
+            return Param(
+                freeze=self.freeze, init_value=self.init_value, prior=self.prior
+            )
+        elif self.estimate_from:
+            selected_data = [data_dict[k] for k in self.estimate_from]
+            kwargs = {}
+            if self.photon_energy_density is not None:
+                kwargs["photon_energy_density"] = self.photon_energy_density
+            Bval = 2 * naima.estimate_B(*selected_data, **kwargs)
+            return Param(freeze=self.freeze, init_value=Bval, prior=self.prior)
+        else:
+            raise ValueError(
+                "MagneticField requires either init_value or estimate_from"
+            )
+
+
 class SynchrotronConfig(RadiativeProcessConfig):
     name: Literal["Synchrotron"]
-    B: QuantityType | Literal["estimate"] = 3.24e-6 * u.G
-    Eemin: QuantityType
-    Eemax: QuantityType
-    nEed: int
+    B: Optional[MagneticField] = None
+    Eemin: Optional[QuantityType] = None
+    Eemax: Optional[QuantityType] = None
+    nEed: Optional[int] = None
 
 PhotonField = Union[
     str,
