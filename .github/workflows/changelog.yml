@@ -8,7 +8,7 @@ on:
       - 'main'
 
 env:
-  FRAGMENT_NAME_PREFIX: "docs/changes/${{ github.event.number }}"
+  FRAGMENT_NAME_PREFIX: "docs/source/changes/${{ github.event.number }}"
 
 jobs:
   changelog:
