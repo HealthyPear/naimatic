@@ -204,9 +204,9 @@ class PionDecayConfig(RadiativeProcessConfig):
 
 class BremsstrahlungConfig(RadiativeProcessConfig):
     name: Literal["Bremsstrahlung"]
-    n0: QuantityType
-    weight_ee: float = 1.088
-    weight_ep: float = 1.263
+    n0: Optional[QuantityType] = None
+    weight_ee: Optional[float] = None
+    weight_ep: Optional[float] = None
 
 
 CompoundRadiativeProcessConfig = Annotated[
