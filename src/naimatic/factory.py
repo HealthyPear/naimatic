@@ -171,9 +171,25 @@ def compute_metadata_blobs(metadata_cfg, pdist, rmodels):
             all_same = all(p is not None and p is pdists[0] for p in pdists)
             if all_same:
                 # Only sum once
-                total_energy = rmodels[0].compute_We(Eemin=e_min)
+                try:
+                    total_energy = rmodels[0].compute_We(Eemin=e_min)
+                except AttributeError:
+                    total_energy = rmodels[0].compute_Wp(Epmin=e_min)
+                except Exception:
+                    logger.exception(
+                        "Failed to compute total particle energy with e_min=%s", e_min
+                    )
+                    raise
             else:
-                total_energy = sum(r.compute_We(Eemin=e_min) for r in rmodels)
+                try:
+                    total_energy = sum(r.compute_We(Eemin=e_min) for r in rmodels)
+                except AttributeError:
+                    total_energy = sum(r.compute_Wp(Epmin=e_min) for r in rmodels)
+                except Exception:
+                    logger.exception(
+                        "Failed to compute total particle energy with e_min=%s", e_min
+                    )
+                    raise
             blobs.append(total_energy)
 
     return blobs
