@@ -5,6 +5,31 @@ This page contains various examples of how to use *naimatic*,
 starting from the same examples that you can find in the `naima` documentation
 pages.
 
+.. important::
+
+  | A general note on the configuration of parameters:
+
+  | I preferred to give the user an interface that makes physical sense,
+    so parameter initial values and priors are *always* defined by the
+    physical quantity together with its unit,
+    even if what is fit in the end is the base-10
+    exponent.
+  
+  | For example, the following snippet is equivalent to set a prior
+  | ``logprob = naima.uniform_prior(pars[0], 0, np.inf)``
+  | for ``amplitude = 10 ** pars[0] / u.eV``.
+
+  .. code-block:: yaml
+
+    amplitude:
+      freeze: false
+      log10: true
+      init_value: 1e30 eV-1
+      prior:
+      name: uniform
+        min: 1 eV-1   # this is equivalent to 10**0 eV-1
+        max: inf eV-1 # this is equivalent to 10**inf eV-1
+
 Fitting a minimal radiative model
 ---------------------------------
 
@@ -189,3 +214,61 @@ Fitting Synchrotron and IC emission from an electron distribution
       threads: 4
       prefit: true
       interactive: false
+
+Fitting PionDecay emission from a proton distribution
+-----------------------------------------------------
+
+.. code-block:: yaml
+
+  output_path:
+
+  data:
+    hess: RXJ1713_HESS_2007.dat
+
+  models:
+    - name: PionDecay
+      overwrite: true
+      distance: "1.5 kpc"
+      particle_distribution:
+        name: ExponentialCutoffPowerLaw
+        amplitude:
+          freeze: false
+          log10: true
+          init_value: 1e45 TeV-1
+          prior:
+            name: uniform
+            min: 1 TeV-1
+            max: inf TeV-1
+        e_0:
+          freeze: true
+          init_value: 1 TeV
+        alpha:
+          init_value: 1.6
+          prior:
+            name: uniform
+            min: -1
+            max: 5
+        e_cutoff:
+          log10: true
+          init_value: 12 TeV
+        beta:
+          freeze: true
+          init_value: 0.54
+      radiative_processes:
+        - name: PionDecay
+          nh: "10 cm-3"
+      metadata:
+        particle_distribution:
+          save: true # if true save to blob metadata
+          energy_range: np.logspace(-3, 2, 50) * u.TeV
+        total_particle_energy:
+          save: true # if true save to blob metadata
+          e_min: 1 TeV
+
+  mcmc:
+    nwalkers: 32
+    nburn: 100
+    nrun: 20
+    threads: 4
+    prefit: true
+    interactive: false
