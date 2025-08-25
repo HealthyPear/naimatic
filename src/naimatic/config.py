@@ -193,20 +193,20 @@ class InverseComptonConfig(RadiativeProcessConfig):
 
 class PionDecayConfig(RadiativeProcessConfig):
     name: Literal["PionDecay"]
-    nh: QuantityType = 1 * u.cm**-3
-    nuclear_enhancement: bool = False
-    Epmin: QuantityType = 1.22 * u.GeV
-    Epmax: QuantityType = 10 * u.PeV
-    nEpd: int = 100
-    hiEmodel: Literal["Geant4", "Pythia8", "SIBYLL", "QGSJET"] = "Pythia8"
-    useLUT: bool = False
+    nh: Optional[QuantityType] = None
+    nuclear_enhancement: Optional[bool] = None
+    Epmin: Optional[QuantityType] = None
+    Epmax: Optional[QuantityType] = None
+    nEpd: Optional[int] = None
+    hiEmodel: Optional[Literal["Geant4", "Pythia8", "SIBYLL", "QGSJET"]] = None
+    useLUT: Optional[bool] = None
 
 
 class BremsstrahlungConfig(RadiativeProcessConfig):
     name: Literal["Bremsstrahlung"]
-    n0: QuantityType
-    weight_ee: float = 1.088
-    weight_ep: float = 1.263
+    n0: Optional[QuantityType] = None
+    weight_ee: Optional[float] = None
+    weight_ep: Optional[float] = None
 
 
 CompoundRadiativeProcessConfig = Annotated[
