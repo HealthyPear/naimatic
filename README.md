@@ -236,9 +236,62 @@ mcmc:
   interactive: false
 ```
 
-### Hadronic model with pion decay
+### Fitting PionDecay emission from a proton distribution
 
-TODO
+```yaml
+output_path:
+
+data:
+  hess: RXJ1713_HESS_2007.dat
+
+models:
+  - name: PionDecay
+    overwrite: true
+    distance: "1.5 kpc"
+    particle_distribution:
+      name: ExponentialCutoffPowerLaw
+      amplitude:
+        freeze: false
+        log10: true
+        init_value: 1e45 TeV-1
+        prior:
+          name: uniform
+          min: 1 TeV-1
+          max: inf TeV-1
+      e_0:
+        freeze: true
+        init_value: 1 TeV
+      alpha:
+        init_value: 1.6
+        prior:
+          name: uniform
+          min: -1
+          max: 5
+      e_cutoff:
+        log10: true
+        init_value: 12 TeV
+      beta:
+        freeze: true
+        init_value: 0.54
+    radiative_processes:
+      - name: PionDecay
+        nh: "10 cm-3"
+    metadata:
+      particle_distribution:
+        save: true # if true save to blob metadata
+        energy_range: np.logspace(-3, 2, 50) * u.TeV
+      total_particle_energy:
+        save: true # if true save to blob metadata
+        e_min: 1 TeV
+
+mcmc:
+  nwalkers: 32
+  nburn: 100
+  nrun: 20
+  threads: 4
+  prefit: true
+  interactive: false
+```
 
 ### Multiple radiative processes with same particle distributions
 
